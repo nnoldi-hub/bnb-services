@@ -16,9 +16,12 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
   "devDependencies": {
-    "turbo": "^1.12.5",
-    "prettier": "^3.2.5",
+    "@types/bcrypt": "^6.0.0",
+    "@types/passport-jwt": "^4.0.1",
     "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "prisma": "^7.5.0",
+    "turbo": "^1.12.5",
     "typescript": "^5.3.3"
   },
   "packageManager": "npm@11.5.2",

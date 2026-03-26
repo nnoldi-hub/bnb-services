@@ -49,3 +49,5 @@ lerna-debug.log*
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+/generated/prisma

@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  phone         String?
+  role          Role      @default(OWNER)
+  emailVerified Boolean   @default(false) @map("email_verified")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  properties    Property[]
+  assignedTasks Task[]     @relation("AssignedTasks")
+  payments      Payment[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+enum Role {
+  OWNER
+  TEAM_MEMBER
+  ADMIN
+}
+
+model Property {
+  id          String   @id @default(uuid())
+  ownerId     String   @map("owner_id")
+  name        String
+  address     String
+  city        String
+  country     String   @default("Romania")
+  postalCode  String?  @map("postal_code")
+  latitude    Float
+  longitude   Float
+  bedrooms    Int
+  bathrooms   Int
+  photos      String[]
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  inventory   InventoryItem[]
+
+  @@index([ownerId])
+  @@map("properties")
+}
+
+model Task {
+  id                String     @id @default(uuid())
+  propertyId        String     @map("property_id")
+  assignedToId      String?    @map("assigned_to_id")
+  type              TaskType
+  status            TaskStatus @default(PENDING)
+  title             String
+  description       String?
+  scheduledAt       DateTime?  @map("scheduled_at")
+  startedAt         DateTime?  @map("started_at")
+  completedAt       DateTime?  @map("completed_at")
+  estimatedDuration Int?       @map("estimated_duration") // minutes
+  priority          Priority   @default(MEDIUM)
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  property          Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  assignedTo        User?      @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  photos            TaskPhoto[]
+  checkpoints       TaskCheckpoint[]
+
+  @@index([propertyId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("tasks")
+}
+
+enum TaskType {
+  CLEANING
+  EMERGENCY
+  MAINTENANCE
+  INSPECTION
+}
+
+enum TaskStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model TaskPhoto {
+  id        String    @id @default(uuid())
+  taskId    String    @map("task_id")
+  url       String
+  type      PhotoType
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_photos")
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+  DURING
+  ISSUE
+}
+
+model TaskCheckpoint {
+  id          String   @id @default(uuid())
+  taskId      String   @map("task_id")
+  description String
+  isCompleted Boolean  @default(false) @map("is_completed")
+  order       Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_checkpoints")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("RON")
+  type            PaymentType
+  status          PaymentStatus
+  stripePaymentId String?       @map("stripe_payment_id")
+  description     String?
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payments")
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  PER_TASK
+  ONE_TIME
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean            @default(false) @map("is_read")
+  data      Json?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  TASK_OVERDUE
+  PAYMENT_DUE
+  PAYMENT_SUCCESS
+  EMERGENCY_ALERT
+}
+
+model InventoryItem {
+  id            String    @id @default(uuid())
+  propertyId    String    @map("property_id")
+  name          String
+  category      String
+  quantity      Int
+  minQuantity   Int       @default(5) @map("min_quantity")
+  unit          String    // buc, l, kg
+  cost          Decimal?  @db.Decimal(10, 2)
+  supplier      String?
+  lastRestocked DateTime? @map("last_restocked")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  property      Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  logs          InventoryLog[]
+
+  @@index([propertyId])
+  @@map("inventory_items")
+}
+
+model InventoryLog {
+  id        String    @id @default(uuid())
+  itemId    String    @map("item_id")
+  quantity  Int       // Can be negative for usage
+  type      LogType
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("inventory_logs")
+}
+
+enum LogType {
+  RESTOCK
+  USAGE
+  ADJUSTMENT
+}

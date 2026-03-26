@@ -21,9 +21,11 @@ model User {
   firstName     String    @map("first_name")
   lastName      String    @map("last_name")
   phone         String?
+  phoneNumber   String?   @map("phone_number") // Alias for phone
   role          Role      @default(OWNER)
   emailVerified Boolean   @default(false) @map("email_verified")
   isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -46,6 +48,7 @@ model Property {
   ownerId     String   @map("owner_id")
   name        String
   address     String
+  description String?  // Added description field
   city        String
   country     String   @default("Romania")
   postalCode  String?  @map("postal_code")

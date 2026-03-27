@@ -20,7 +20,7 @@
     "@types/passport-jwt": "^4.0.1",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "prisma": "^7.5.0",
+    "prisma": "^6.19.2",
     "turbo": "^1.12.5",
     "typescript": "^5.3.3"
   },
@@ -28,5 +28,9 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "@nestjs/cli": "7.6.0",
+    "@nestjs/schematics": "7.3.1"
   }
 }
